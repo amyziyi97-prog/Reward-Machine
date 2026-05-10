@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>多巴胺奖励机</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F7F4EF;
+    --surface: #FFFFFF;
+    --surface2: #F0EDE7;
+    --border: rgba(0,0,0,0.1);
+    --border-strong: rgba(0,0,0,0.18);
+    --text: #1A1714;
+    --text-muted: #7A7570;
+    --text-faint: #B0ABA5;
+    --accent: #C4622D;
+    --accent-light: #F5E8DF;
+    --accent-text: #8A3E18;
+    --success: #3A7D5A;
+    --success-bg: #E8F5EE;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Serif SC', serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 3rem 1rem 4rem;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 520px;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .header h1 {
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+  }
+
+  .header p {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.7;
+    font-family: 'DM Mono', monospace;
+    font-weight: 400;
+  }
+
+  .slot-machine {
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    padding: 2rem 1.5rem;
+    margin-bottom: 1rem;
+    text-align: center;
+    min-height: 130px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .slot-machine::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--accent);
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+
+  .slot-label {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: var(--text-faint);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .slot-result {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.5;
+    transition: opacity 0.08s;
+    min-height: 32px;
+  }
+
+  .slot-result.idle {
+    font-size: 15px;
+    font-weight: 400;
+    color: var(--text-faint);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .winner-banner {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    background: var(--success-bg);
+    border: 1px solid rgba(58,125,90,0.25);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    margin-bottom: 1rem;
+    font-size: 13px;
+    color: var(--success);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .winner-banner svg { flex-shrink: 0; }
+
+  .actions {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 2rem;
+  }
+
+  .btn-spin {
+    flex: 1;
+    padding: 13px 20px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: 'Noto Serif SC', serif;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    letter-spacing: 0.03em;
+    transition: background 0.15s, transform 0.1s, opacity 0.15s;
+  }
+
+  .btn-spin:hover { background: #b05828; }
+  .btn-spin:active { transform: scale(0.98); }
+  .btn-spin:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  .btn-edit {
+    padding: 13px 16px;
+    font-size: 13px;
+    font-family: 'DM Mono', monospace;
+    color: var(--text-muted);
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.12s, color 0.12s;
+  }
+
+  .btn-edit:hover { background: var(--surface2); color: var(--text); }
+
+  .list-section {
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    overflow: hidden;
+    display: none;
+  }
+
+  .list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .list-title {
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .btn-add {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    font-family: 'DM Mono', monospace;
+    color: var(--accent);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background 0.12s;
+  }
+
+  .btn-add:hover { background: var(--accent-light); }
+
+  .reward-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+
+  .reward-item:last-child { border-bottom: none; }
+  .reward-item:hover { background: var(--surface2); }
+
+  .item-num {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: var(--text-faint);
+    min-width: 20px;
+    flex-shrink: 0;
+  }
+
+  .item-text {
+    flex: 1;
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.5;
+    word-break: break-all;
+    cursor: text;
+    outline: none;
+    padding: 2px 4px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    transition: border-color 0.12s, background 0.12s;
+    font-family: 'Noto Serif SC', serif;
+  }
+
+  .item-text:focus {
+    border-color: var(--accent);
+    background: var(--accent-light);
+  }
+
+  .btn-del {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    color: var(--text-faint);
+    border-radius: 6px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    transition: color 0.12s, background 0.12s;
+  }
+
+  .btn-del:hover { color: #c0392b; background: #fdf0f0; }
+
+  .new-row {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-top: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .new-row input {
+    flex: 1;
+    font-size: 14px;
+    padding: 7px 12px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font-family: 'Noto Serif SC', serif;
+    outline: none;
+    transition: border-color 0.12s;
+  }
+
+  .new-row input:focus { border-color: var(--accent); }
+  .new-row input::placeholder { color: var(--text-faint); font-family: 'DM Mono', monospace; font-size: 13px; }
+
+  .btn-confirm {
+    font-size: 13px;
+    padding: 7px 14px;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    transition: background 0.12s;
+    white-space: nowrap;
+  }
+
+  .btn-confirm:hover { background: #b05828; }
+
+  .footer {
+    text-align: center;
+    margin-top: 2.5rem;
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+    color: var(--text-faint);
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .list-section.visible {
+    display: block;
+    animation: fadeIn 0.18s ease;
+  }
+
+  .winner-banner.visible {
+    display: flex;
+    animation: fadeIn 0.2s ease;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>多巴胺奖励机</h1>
+    <p>完成任务后 → 抽一个奖励<br>不可预测的赏筹，让激素带你进步</p>
+  </div>
+
+  <div class="slot-machine">
+    <div class="slot-label">reward</div>
+    <div class="slot-result idle" id="slotResult">完成任务后，拉动开关 ——</div>
+  </div>
+
+  <div class="winner-banner" id="winnerBanner">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+    <span id="winnerText"></span>
+  </div>
+
+  <div class="actions">
+    <button class="btn-spin" id="btnSpin" onclick="spin()">
+      ✦ 我完成任务了，抽奖
+    </button>
+    <button class="btn-edit" id="btnEdit" onclick="toggleEdit()">编辑奖励</button>
+  </div>
+
+  <div class="list-section" id="listSection">
+    <div class="list-header">
+      <span class="list-title">奖励清单 &nbsp;<span id="countLabel">12</span> 项</span>
+      <button class="btn-add" onclick="showNewRow()">+ 添加</button>
+    </div>
+    <div id="rewardList"></div>
+    <div class="new-row" id="newRow">
+      <input type="text" id="newInput" placeholder="输入新奖励…" maxlength="80"
+        onkeydown="if(event.key==='Enter')addItem()"/>
+      <button class="btn-confirm" onclick="addItem()">确认</button>
+    </div>
+  </div>
+
+  <div class="footer">奖励数据保存在本页面 · 编辑后另存为新文件</div>
+</div>
+
+<script>
+let rewards = [
+  "一个精致甜品店/咖啡店",
+  "一件非常满意的衣服（不限价格）",
+  "一个充足的午睡/晚觉",
+  "一个 idle 周末（No plan）",
+  "外食（宝藏小店）",
+  "超市的贵价食物",
+  "周末去一个地方旅行",
+  "体验一个新东西",
+  "买一个香氛类的物品（身体乳/线香/香薰）",
+  "用一整块时间听播客/看长视频/看电影（输出体会）",
+  "用一整块时间看一本书（随意题材）",
+  "用一整块时间学习化妆一个部位"
+];
+
+let spinning = false;
+let editOpen = false;
+
+const STORAGE_KEY = 'dopamine_rewards';
+
+function loadRewards() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) rewards = JSON.parse(saved);
+  } catch(e) {}
+}
+
+function saveRewards() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(rewards));
+  } catch(e) {}
+}
+
+loadRewards();
+
+function renderList() {
+  const list = document.getElementById('rewardList');
+  list.innerHTML = '';
+  rewards.forEach((r, i) => {
+    const row = document.createElement('div');
+    row.className = 'reward-item';
+    row.innerHTML = `
+      <span class="item-num">${String(i+1).padStart(2,'0')}</span>
+      <span class="item-text" contenteditable="true" spellcheck="false"
+        onblur="saveEdit(${i}, this)">${escHtml(r)}</span>
+      <button class="btn-del" onclick="deleteItem(${i})" aria-label="删除">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+      </button>
+    `;
+    list.appendChild(row);
+  });
+  document.getElementById('countLabel').textContent = rewards.length;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function saveEdit(i, el) {
+  const val = el.textContent.trim();
+  if (val) {
+    rewards[i] = val;
+    saveRewards();
+  } else {
+    el.textContent = rewards[i];
+  }
+}
+
+function deleteItem(i) {
+  if (rewards.length <= 1) return;
+  rewards.splice(i, 1);
+  saveRewards();
+  renderList();
+}
+
+function showNewRow() {
+  const nr = document.getElementById('newRow');
+  nr.style.display = 'flex';
+  document.getElementById('newInput').focus();
+}
+
+function addItem() {
+  const inp = document.getElementById('newInput');
+  const val = inp.value.trim();
+  if (!val) return;
+  rewards.push(val);
+  inp.value = '';
+  document.getElementById('newRow').style.display = 'none';
+  saveRewards();
+  renderList();
+}
+
+function toggleEdit() {
+  editOpen = !editOpen;
+  const sec = document.getElementById('listSection');
+  const btn = document.getElementById('btnEdit');
+  if (editOpen) {
+    sec.classList.add('visible');
+    btn.textContent = '完成编辑';
+    renderList();
+  } else {
+    sec.classList.remove('visible');
+    sec.style.display = 'none';
+    btn.textContent = '编辑奖励';
+    document.getElementById('newRow').style.display = 'none';
+  }
+}
+
+function spin() {
+  if (spinning || rewards.length === 0) return;
+  spinning = true;
+  document.getElementById('winnerBanner').classList.remove('visible');
+  const el = document.getElementById('slotResult');
+  el.classList.remove('idle');
+  document.getElementById('btnSpin').disabled = true;
+
+  let ticks = 0;
+  const totalTicks = 26;
+  let delay = 38;
+
+  function tick() {
+    const idx = Math.floor(Math.random() * rewards.length);
+    el.style.opacity = '0.25';
+    setTimeout(() => {
+      el.textContent = rewards[idx];
+      el.style.opacity = '1';
+    }, 45);
+    ticks++;
+    if (ticks < totalTicks) {
+      delay = ticks < 14 ? delay : delay * 1.09;
+      setTimeout(tick, Math.round(delay));
+    } else {
+      const winnerIdx = Math.floor(Math.random() * rewards.length);
+      const winner = rewards[winnerIdx];
+      el.style.opacity = '0.25';
+      setTimeout(() => {
+        el.textContent = winner;
+        el.style.opacity = '1';
+        document.getElementById('winnerText').textContent = '你的奖励：' + winner;
+        document.getElementById('winnerBanner').classList.add('visible');
+        spinning = false;
+        document.getElementById('btnSpin').disabled = false;
+      }, 45);
+    }
+  }
+  tick();
+}
+</script>
+</body>
+</html>
